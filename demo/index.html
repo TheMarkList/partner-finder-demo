@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Finder Demo</title>
+<meta name="description" content="Concept demo of a tool that ranks community owners as referral partners and drafts first messages for review. Sample data only.">
+<style>
+  :root {
+    --bg: #f3f4f6; --card: #ffffff; --text: #111827; --muted: #6b7280;
+    --line: #e5e7eb; --blue: #2563eb; --blue-soft: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .banner { background: #eff6ff; border-bottom: 1px solid #bfdbfe; color: #1e3a8a; font-size: 13px;
+            padding: 8px 16px; text-align: center; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+  button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card);
+           color: var(--text); padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+  button:hover { border-color: #cbd5e1; }
+  .primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .primary:hover { background: #1d4ed8; }
+  .small { font-size: 12px; padding: 3px 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat .label { color: var(--muted); font-size: 13px; }
+  .stat .num { font-size: 28px; font-weight: 700; margin-top: 2px; }
+  .stat .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+  .stat.hero { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .stat.hero .label { color: #dbeafe; }
+  .stat.hero button { background: transparent; color: #fff; border-color: #93c5fd; }
+
+  .main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+  .left { display: grid; gap: 16px; min-width: 0; }
+  .main > *, .stats > *, .left > * { min-width: 0; }
+  h2 { font-size: 16px; margin: 0; }
+  .bar-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters button.on { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f9fafb; }
+  tbody tr.sel { background: var(--blue-soft); }
+  .cname { font-weight: 600; }
+  .plat { color: var(--muted); font-size: 12px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-left: 4px; font-weight: 600; }
+  .score { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .track { width: 56px; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: var(--blue); }
+  .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; white-space: nowrap; }
+  .status.Approved, .status.Signed { background: var(--blue-soft); color: var(--blue); }
+  .swipe { display: none; color: var(--muted); font-size: 12px; margin: -4px 0 8px; }
+  .empty { color: var(--muted); text-align: center; padding: 28px 8px; }
+
+  .how dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; font-size: 14px; }
+  .how dt { font-weight: 600; }
+  .how dd { margin: 0; color: #374151; }
+
+  .panel h3 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .panel ul { margin: 0; padding-left: 18px; }
+  .panel li { margin-bottom: 4px; }
+  textarea { width: 100%; min-height: 190px; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+  .panel-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  select, input { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 100%; }
+
+  dialog { border: none; border-radius: 12px; padding: 20px; width: min(520px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(17,24,39,.35); }
+  .form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form label { font-size: 13px; color: var(--muted); display: block; }
+  .form .full { grid-column: 1 / -1; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
+           padding: 10px 14px; border-radius: 8px; font-size: 14px; max-width: calc(100vw - 32px); display: none; z-index: 10; }
+
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat.hero { grid-column: 1 / -1; }
+    .main { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    header { flex-direction: column; align-items: stretch; }
+    .actions { justify-content: flex-start; }
+    .form { grid-template-columns: 1fr; }
+    .how dl { grid-template-columns: 1fr; gap: 2px; }
+    .how dd { margin-bottom: 8px; }
+    .swipe { display: block; }
+  }
+</style>
+</head>
+<body>
+<div class="banner">Concept demo by Mark Sicola. Sample data only. Not affiliated with Blotato. Nothing is sent from this page.</div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Partner Finder</h1>
+      <div class="sub">Last updated: <span id="last">—</span> · <span id="saveNote">Changes are saved in your browser only.</span></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="addBtn">+ Add owner</button>
+      <button id="resetBtn">Reset demo</button>
+    </div>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="main">
+    <div class="left">
+      <div class="card">
+        <div class="bar-head">
+          <h2>Top matches</h2>
+          <div class="filters" id="filters">
+            <button class="small on" data-f="All">All</button>
+            <button class="small" data-f="Skool">Skool</button>
+          </div>
+        </div>
+        <div class="swipe">Swipe the table sideways to see fit score and status.</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Community</th><th>Members</th><th>Price</th><th>Posts this week</th><th>Fit score</th><th>Status</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card how">
+        <h2>How this would work</h2>
+        <dl>
+          <dt>Sourcing</dt><dd>Community owners are added by hand or by spreadsheet, then ranked by how active, how big and how on-topic their community is.</dd>
+          <dt>Outreach</dt><dd>Claude drafts a short, personal first message for each top match, and a person reviews, edits and sends it by hand.</dd>
+          <dt>Onboarding</dt><dd>Owners who say yes get a partner link, a short welcome guide and a simple first challenge to share with their members.</dd>
+          <dt>Milestones and rewards</dt><dd>Partners unlock rewards as their referrals grow, with 10 referrals a month as the main goal.</dd>
+          <dt>Slack community</dt><dd>Signed partners join a private Slack to share wins, swap ideas and hear about new features first.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card panel" id="panel"></div>
+  </section>
+</div>
+
+<dialog id="addDialog">
+  <form id="addForm">
+    <h2 style="margin-bottom:12px">Add owner</h2>
+    <div class="form">
+      <div class="full"><label>Community name *</label><input name="community_name" required></div>
+      <div class="full"><label>URL</label><input name="url" placeholder="https://..."></div>
+      <div><label>Platform</label><select name="platform" id="platformSel"></select></div>
+      <div><label>Owner name</label><input name="owner_name"></div>
+      <div class="full"><label>Niche</label><input name="niche" placeholder="e.g. business coaching for new coaches"></div>
+      <div><label>Member count</label><input name="member_count" inputmode="numeric" placeholder="e.g. 850"></div>
+      <div><label>Price</label><input name="price" placeholder="e.g. $49/month or Free"></div>
+      <div><label>Posts this week</label><input name="posts_this_week" inputmode="numeric" placeholder="e.g. 12"></div>
+    </div>
+    <div class="panel-actions" style="justify-content:flex-end;margin-top:16px">
+      <button type="button" id="addCancel">Cancel</button>
+      <button class="primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+// ------------------------------------------------------------------ settings
+const STORAGE_KEY = "partner-finder-demo-v1";
+const STATUSES = ["New", "Drafted", "Approved", "Replied", "Signed"];
+const PLATFORMS = ["Skool", "Circle", "Discord", "Slack", "Facebook group", "Other"];
+
+// Made-up sample communities. Every name, owner and link here is fictional.
+const SAMPLES = [
+  ["Sample: Coach Growth Lab", "Skool", "Jamie Sample", "business coaching for new coaches", 820, "$49/month", 14,
+   "Hi Jamie,\n\nI came across Coach Growth Lab and love that it's built for coaches who are just getting started. That first year is where good habits stick.\n\nI wanted to tell you about a social media tool that helps coaches plan and post a week of content in about an hour. Partners earn a recurring commission for every member they refer.\n\nWould you be open to a quick chat to see if it's a fit for your group?\n\nMark"],
+  ["Sample: Creator Content Club", "Skool", "Riley Sample", "YouTube creators and content strategy", 2400, "$29/month", 9,
+   "Hi Riley,\n\nCreator Content Club looks like a great home for YouTubers who want a real content strategy, not just more uploads.\n\nI wanted to tell you about a social media tool that turns one video into a week of posts across platforms. Partners earn a recurring commission for each creator they bring in.\n\nCould this be useful for your members? Happy to send a short walkthrough.\n\nMark"],
+  ["Sample: Local Business Marketing Hub", "Circle", "Morgan Sample", "social media marketing for local business owners", 610, "$79/month", 6,
+   "Hi Morgan,\n\nLocal Business Marketing Hub caught my eye. Helping shop owners get social media right is hard work, and your group is clearly focused on it.\n\nI wanted to tell you about a simple tool that lets busy owners schedule a month of posts in one sitting. Partners earn a recurring commission on every referral.\n\nWould a short call to explore a partnership be worth 15 minutes?\n\nMark"],
+  ["Sample: Agency Owners Circle", "Skool", "Casey Sample", "agency owners and entrepreneurs", 4300, "$99/month", 4,
+   "Hi Casey,\n\nAgency Owners Circle looks like a strong room of founders, and agency owners always feel the squeeze on client content.\n\nI wanted to tell you about a social media tool that helps small agencies manage posting for several clients from one place. Partners get a recurring commission for each agency they refer.\n\nOpen to a quick chat about whether it'd help your members?\n\nMark"],
+  ["Sample: Fitness Coach Collective", "Facebook group", "Taylor Sample", "fitness coaching", 15000, "Free", 22,
+   "Hi Taylor,\n\nFitness Coach Collective is buzzing. That's a lot of trainers sharing ideas every day.\n\nI wanted to tell you about a social media tool that helps fitness coaches keep posting consistently without living on their phones. Partners earn a recurring commission on every coach they refer.\n\nWould you be up for a short conversation about a partnership?\n\nMark"],
+  ["Sample: Etsy Sellers Corner", "Discord", "Jordan Sample", "handmade online shop sellers", 300, "Free", 2,
+   "Hi Jordan,\n\nEtsy Sellers Corner seems like a friendly spot for handmade shop owners to swap tips.\n\nI wanted to tell you about a social media tool that helps small sellers show off new products on several platforms at once. Partners earn a recurring commission for each seller they refer.\n\nWould your members find something like that helpful? Happy to share more.\n\nMark"],
+  ["Sample: Crypto Moon Traders", "Skool", "Alex Sample", "crypto trading signals", 9000, "$199/month", 30,
+   "Hi Alex,\n\nCrypto Moon Traders is clearly very active. Your members show up every day.\n\nI wanted to tell you about a social media tool that helps community owners share updates across platforms in one step. Partners earn a recurring commission on referrals.\n\nWould you be open to hearing more?\n\nMark"],
+  ["Sample: Tiny Podcast Starters", "Slack", "Sam Sample", "podcast content creators", 40, "$10/month", 1,
+   "Hi Sam,\n\nTiny Podcast Starters sounds like a lovely, close-knit group for people launching their first show.\n\nI wanted to tell you about a social media tool that turns each episode into ready-to-post clips and captions. Partners earn a recurring commission for every podcaster they refer.\n\nWould a quick chat be welcome once the group grows a little?\n\nMark"],
+];
+
+// ------------------------------------------------------------------ fit score (same rules as the full tool)
+const COACH = ["coach", "coaching", "mentor"];
+const CREATOR = ["creator", "youtube", "content", "influencer"];
+const BUSINESS = ["business", "agency", "entrepreneur", "marketing", "local business"];
+const SOCIAL = ["social media"];
+const OFF_TOPIC = ["crypto", "gaming", "forex", "betting", "nft"];
+
+function scoreParts(name, niche, members, posts) {
+  posts = posts || 0;
+  const activity = Math.round(Math.min(posts, 10) / 10 * 40);
+  let size;
+  if (members == null) size = 10;
+  else if (members >= 100 && members <= 5000) size = 20;
+  else if ((members >= 50 && members < 100) || (members > 5000 && members <= 20000)) size = 12;
+  else size = 5;
+  const text = `${name || ""} ${niche || ""}`.toLowerCase();
+  const has = (words) => words.some(w => new RegExp("\\b" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(text));
+  let nichePts = 0, groups = [];
+  if (has(OFF_TOPIC)) groups = ["off-topic"];
+  else {
+    for (const [label, words, pts] of [["coaches", COACH, 15], ["creators", CREATOR, 15],
+                                       ["small business", BUSINESS, 15], ["social media", SOCIAL, 10]]) {
+      if (has(words)) { nichePts += pts; groups.push(label); }
+    }
+    nichePts = Math.min(nichePts, 40);
+  }
+  let total = activity + size + nichePts;
+  if (groups[0] === "off-topic") total = Math.min(total, 20);
+  return { total, activity, size, nichePts, groups };
+}
+
+function whyThisOwner(o) {
+  const s = scoreParts(o.community_name, o.niche, o.member_count, o.posts_this_week);
+  const posts = o.posts_this_week || 0, m = o.member_count;
+  const b1 = `Activity ${s.activity}/40: ${posts} post${posts !== 1 ? "s" : ""} this week` +
+             (posts >= 10 ? " — very active." : posts < 3 ? " — quiet." : ".");
+  const b2 = m == null ? `Size ${s.size}/20: member count unknown.`
+           : s.size === 20 ? `Size ${s.size}/20: ${m.toLocaleString()} members — in the sweet spot (100–5,000).`
+           : `Size ${s.size}/20: ${m.toLocaleString()} members — outside the 100–5,000 sweet spot.`;
+  const b3 = s.groups[0] === "off-topic" ? "Niche 0/40: niche looks off-topic for us, so the whole score is capped at 20."
+           : s.groups.length ? `Niche ${s.nichePts}/40: matches ${s.groups.join(", ")}.`
+           : "Niche 0/40: no match with coaches, creators or small business.";
+  return [b1, b2, b3];
+}
+
+// ------------------------------------------------------------------ data (kept in this browser only)
+const nowStr = () => new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+
+function freshData() {
+  const t = nowStr();
+  return {
+    nextId: SAMPLES.length + 1,
+    owners: SAMPLES.map(([name, platform, owner, niche, members, price, posts, draft], i) => ({
+      id: i + 1, community_name: name, url: `https://example.com/sample-${i + 1}`, platform,
+      owner_name: owner, niche, member_count: members, price, posts_this_week: posts,
+      fit_score: scoreParts(name, niche, members, posts).total, status: "Drafted",
+      draft_message: draft, is_sample: true, date_found: t, date_updated: t })),
+    manual: { challenges_run: 0, partners_signed: 0, partners_at_10_per_month: 0 },
+    last_updated: t,
+  };
+}
+
+let storageOk = true;
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && Array.isArray(d.owners)) return d; }
+  } catch { storageOk = false; }
+  return freshData();
+}
+function save() {
+  data.last_updated = nowStr();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch { storageOk = false; }
+}
+
+let data = load(), filter = "All", selectedId = null;
+
+// ------------------------------------------------------------------ screen
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) e.append(k);
+  return e;
+}
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.style.display = "none", 4000);
+}
+const fmt = (n) => n == null ? "—" : Number(n).toLocaleString();
+const sorted = () => [...data.owners].sort((a, b) => b.fit_score - a.fit_score || a.community_name.localeCompare(b.community_name));
+const visible = () => sorted().filter(o => filter === "All" || o.platform === filter);
+
+function render() {
+  $("last").textContent = data.last_updated || "—";
+  if (!storageOk) $("saveNote").textContent = "Your browser is blocking storage, so changes reset when you reload.";
+
+  const cards = [
+    ["Owners found", data.owners.length, null],
+    ["Owners signed", data.owners.filter(o => o.status === "Signed").length, null],
+    ["Challenges run", data.manual.challenges_run, "challenges_run"],
+    ["Partners signed", data.manual.partners_signed, "partners_signed"],
+    ["Partners at 10 referrals a month", data.manual.partners_at_10_per_month, "partners_at_10_per_month"],
+  ];
+  $("stats").replaceChildren(...cards.map(([label, num, key], i) =>
+    el("div", { class: "card stat" + (i === 4 ? " hero" : "") },
+      el("div", { class: "row" }, el("div", { class: "label" }, label),
+        key ? el("button", { class: "small", onclick: () => editStat(label, key) }, "Edit") : null),
+      el("div", { class: "num" }, fmt(num)))));
+
+  const list = visible();
+  if (selectedId && !list.some(o => o.id === selectedId)) selectedId = null;
+  if (!selectedId && list.length) selectedId = list[0].id;
+  $("rows").replaceChildren(...(list.length ? list.map(o =>
+    el("tr", { class: o.id === selectedId ? "sel" : "", onclick: () => { selectedId = o.id; render(); } },
+      el("td", {}, el("div", { class: "cname" }, o.community_name, o.is_sample ? el("span", { class: "tag" }, "Sample") : null),
+                   el("div", { class: "plat" }, o.platform || "")),
+      el("td", {}, fmt(o.member_count)),
+      el("td", {}, o.price || "—"),
+      el("td", {}, fmt(o.posts_this_week)),
+      el("td", {}, el("div", { class: "score" },
+        el("div", { class: "track" }, el("div", { class: "fill", style: `width:${o.fit_score}%` })), String(o.fit_score))),
+      el("td", {}, el("span", { class: "status " + o.status }, o.status))))
+    : [el("tr", {}, el("td", { colspan: 6, class: "empty" }, "No communities on this platform yet."))]));
+
+  const o = data.owners.find(x => x.id === selectedId);
+  if (!o) { $("panel").replaceChildren(el("h2", {}, "Draft first message"), el("p", { class: "note" }, "Select a row to see it here.")); return; }
+  const ta = el("textarea", { id: "msg", placeholder: "In the full tool, Claude drafts this message. Type one here to try it." });
+  ta.value = o.draft_message || "";
+  const statusSel = el("select", { style: "width:auto", "aria-label": "Status",
+      onchange: (e) => { o.status = e.target.value; o.date_updated = nowStr(); save(); render(); toast("Status changed."); } },
+    ...STATUSES.map(s => { const opt = el("option", { value: s }, s); if (s === o.status) opt.selected = true; return opt; }));
+  $("panel").replaceChildren(
+    el("h2", {}, "Draft first message"),
+    el("div", { class: "sub", style: "margin-top:4px" }, o.community_name, o.owner_name ? ` · ${o.owner_name}` : ""),
+    el("h3", {}, "Why this owner"),
+    el("ul", {}, ...whyThisOwner(o).map(w => el("li", {}, w))),
+    el("h3", {}, "Message"),
+    ta,
+    el("div", { class: "panel-actions" },
+      el("button", { class: "primary", onclick: () => { o.draft_message = $("msg").value; o.status = "Approved"; o.date_updated = nowStr(); save(); render(); toast("Approved. Nothing was sent."); } }, "Approve"),
+      el("button", { onclick: skip }, "Skip"),
+      el("button", { onclick: () => { o.draft_message = $("msg").value; o.date_updated = nowStr(); save(); render(); toast("Edits saved."); } }, "Save edits"),
+      el("span", { class: "sub", style: "margin-left:auto" }, "Status "), statusSel),
+    el("p", { class: "note" }, "Approve saves your edits and marks it Approved. Nothing is sent from this page. Skip moves to the next row without changing anything."));
+}
+
+function skip() {
+  const list = visible(), i = list.findIndex(o => o.id === selectedId);
+  if (list.length) selectedId = list[(i + 1) % list.length].id;
+  render();
+}
+
+function editStat(label, key) {
+  const v = prompt(`${label}: enter the new number`, data.manual[key]);
+  if (v === null) return;
+  const n = Number(v.trim().replace(/,/g, ""));
+  if (!Number.isInteger(n) || n < 0) return toast("Please enter a whole number, 0 or more.");
+  data.manual[key] = n; save(); render(); toast("Scoreboard updated.");
+}
+
+function toInt(v) {
+  const s = String(v ?? "").trim().replace(/,/g, "");
+  if (s === "" || s === "-" || s === "—") return null;
+  const n = Number(s);
+  if (!Number.isFinite(n)) throw new Error(`"${v}" is not a number`);
+  return Math.trunc(n);
+}
+function makeKey(url, name, platform) {
+  if (url && url.trim()) return url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
+  return `name:${(name || "").trim().toLowerCase()}|${(platform || "").trim().toLowerCase()}`;
+}
+
+function addOwner(f) {
+  const name = (f.community_name || "").trim();
+  if (!name) throw new Error("Community name is required");
+  const members = toInt(f.member_count), posts = toInt(f.posts_this_week);
+  const fields = { community_name: name, url: (f.url || "").trim() || null, platform: f.platform || "Other",
+    owner_name: (f.owner_name || "").trim() || null, niche: (f.niche || "").trim() || null,
+    member_count: members, price: (f.price || "").trim() || null, posts_this_week: posts,
+    fit_score: scoreParts(name, f.niche, members, posts).total, date_updated: nowStr() };
+  const key = makeKey(fields.url, name, fields.platform);
+  const existing = data.owners.find(o => makeKey(o.url, o.community_name, o.platform) === key);
+  if (existing) { Object.assign(existing, fields); selectedId = existing.id; save(); return "Already saved, so the numbers were updated."; }
+  const o = { id: data.nextId++, ...fields, status: "New", draft_message: "", is_sample: false, date_found: fields.date_updated };
+  data.owners.push(o); selectedId = o.id; save();
+  return "Owner added.";
+}
+
+// ------------------------------------------------------------------ buttons
+$("filters").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  filter = b.dataset.f; selectedId = null;
+  [...$("filters").children].forEach(x => x.classList.toggle("on", x === b));
+  render();
+});
+$("platformSel").replaceChildren(...PLATFORMS.map(p => el("option", { value: p }, p)));
+$("addBtn").onclick = () => { $("addForm").reset(); $("addDialog").showModal(); };
+$("addCancel").onclick = () => $("addDialog").close();
+$("addForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  try { toast(addOwner(Object.fromEntries(new FormData($("addForm"))))); $("addDialog").close(); render(); }
+  catch (err) { toast("Problem: " + err.message); }
+});
+$("resetBtn").onclick = () => {
+  if (!confirm("Reset the demo? This brings back the original 8 samples and removes your changes.")) return;
+  data = freshData(); selectedId = null; filter = "All";
+  [...$("filters").children].forEach(x => x.classList.toggle("on", x.dataset.f === "All"));
+  try { localStorage.removeItem(STORAGE_KEY); } catch { storageOk = false; }
+  save(); render(); toast("Demo reset.");
+};
+
+render();
+</script>
+</body>
+</html>

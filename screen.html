@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Finder</title>
+<style>
+  :root {
+    --bg: #f3f4f6; --card: #ffffff; --text: #111827; --muted: #6b7280;
+    --line: #e5e7eb; --blue: #2563eb; --blue-soft: #dbeafe;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+  button, .btn { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card);
+                 color: var(--text); padding: 7px 12px; border-radius: 8px; cursor: pointer; text-decoration: none; }
+  button:hover, .btn:hover { border-color: #cbd5e1; }
+  .primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .primary:hover { background: #1d4ed8; }
+  .small { font-size: 12px; padding: 3px 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat .label { color: var(--muted); font-size: 13px; }
+  .stat .num { font-size: 28px; font-weight: 700; margin-top: 2px; }
+  .stat .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+  .stat.hero { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .stat.hero .label { color: #dbeafe; }
+  .stat.hero button { background: transparent; color: #fff; border-color: #93c5fd; }
+
+  .main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+  h2 { font-size: 16px; margin: 0; }
+  .bar-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters button.on { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #f9fafb; }
+  tbody tr.sel { background: var(--blue-soft); }
+  .cname { font-weight: 600; }
+  .plat { color: var(--muted); font-size: 12px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-left: 4px; font-weight: 600; }
+  .score { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .track { width: 56px; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; background: var(--blue); }
+  .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; white-space: nowrap; }
+  .status.Approved, .status.Signed { background: var(--blue-soft); color: var(--blue); }
+  .empty { color: var(--muted); text-align: center; padding: 28px 8px; }
+
+  .panel h3 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .panel ul { margin: 0; padding-left: 18px; }
+  .panel li { margin-bottom: 4px; }
+  textarea { width: 100%; min-height: 170px; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+  .panel-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  select, input { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 100%; }
+
+  dialog { border: none; border-radius: 12px; padding: 20px; width: min(520px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(17,24,39,.35); }
+  .form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form label { font-size: 13px; color: var(--muted); display: block; }
+  .form .full { grid-column: 1 / -1; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
+           padding: 10px 14px; border-radius: 8px; font-size: 14px; max-width: calc(100vw - 32px); display: none; z-index: 10; }
+
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat.hero { grid-column: 1 / -1; }
+    .main { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    header { flex-direction: column; align-items: stretch; }
+    .actions { justify-content: flex-start; }
+    .form { grid-template-columns: 1fr; }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Partner Finder</h1>
+      <div class="sub">Last updated: <span id="last">—</span> · Nothing here is ever sent.</div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="addBtn">+ Add owner</button>
+      <button id="importBtn">Import CSV</button>
+      <a class="btn" href="/template.csv">Blank template</a>
+      <button id="sampleLoad">Load sample data</button>
+      <button id="sampleClear">Clear sample data</button>
+      <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+    </div>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="main">
+    <div class="card">
+      <div class="bar-head">
+        <h2>Top matches</h2>
+        <div class="filters" id="filters">
+          <button class="small on" data-f="All">All</button>
+          <button class="small" data-f="Skool">Skool</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Community</th><th>Members</th><th>Price</th><th>Posts this week</th><th>Fit score</th><th>Status</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card panel" id="panel"></div>
+  </section>
+</div>
+
+<dialog id="addDialog">
+  <form method="dialog" id="addForm">
+    <h2 style="margin-bottom:12px">Add owner</h2>
+    <div class="form">
+      <div class="full"><label>Community name *</label><input name="community_name" required></div>
+      <div class="full"><label>URL</label><input name="url" placeholder="https://..."></div>
+      <div><label>Platform</label><select name="platform" id="platformSel"></select></div>
+      <div><label>Owner name</label><input name="owner_name"></div>
+      <div class="full"><label>Niche</label><input name="niche" placeholder="e.g. business coaching for new coaches"></div>
+      <div><label>Member count</label><input name="member_count" inputmode="numeric" placeholder="e.g. 850"></div>
+      <div><label>Price</label><input name="price" placeholder="e.g. $49/month or Free"></div>
+      <div><label>Posts this week</label><input name="posts_this_week" inputmode="numeric" placeholder="e.g. 12"></div>
+    </div>
+    <div class="panel-actions" style="justify-content:flex-end;margin-top:16px">
+      <button type="button" id="addCancel">Cancel</button>
+      <button class="primary" type="submit" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+let state = null, filter = "All", selectedId = null;
+const $ = (id) => document.getElementById(id);
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const k of kids) if (k != null) e.append(k);
+  return e;
+}
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.style.display = "none", 5000);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} :
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) { toast("Problem: " + data.error); throw new Error(data.error); }
+  if (data.message) toast(data.message);
+  state = data.state || data;
+  render();
+  return data;
+}
+
+const fmt = (n) => n == null ? "—" : Number(n).toLocaleString();
+
+function render() {
+  $("last").textContent = state.last_updated || "never";
+
+  // Number cards
+  const sb = state.scoreboard;
+  const cards = [
+    ["Owners found", sb.owners_found, null],
+    ["Owners signed", sb.owners_signed, null],
+    ["Challenges run", sb.challenges_run, "challenges_run"],
+    ["Partners signed", sb.partners_signed, "partners_signed"],
+    ["Partners at 10 referrals a month", sb.partners_at_10_per_month, "partners_at_10_per_month"],
+  ];
+  $("stats").replaceChildren(...cards.map(([label, num, key], i) =>
+    el("div", { class: "card stat" + (i === 4 ? " hero" : "") },
+      el("div", { class: "row" },
+        el("div", { class: "label" }, label),
+        key ? el("button", { class: "small", onclick: () => editStat(label, key, num) }, "Edit") : null),
+      el("div", { class: "num" }, fmt(num)))));
+
+  // Table
+  const list = state.owners.filter(o => filter === "All" || o.platform === filter);
+  if (selectedId && !state.owners.some(o => o.id === selectedId)) selectedId = null;
+  if (!selectedId && list.length) selectedId = list[0].id;
+  $("rows").replaceChildren(...(list.length ? list.map(o =>
+    el("tr", { class: o.id === selectedId ? "sel" : "", onclick: () => { selectedId = o.id; render(); } },
+      el("td", {},
+        el("div", { class: "cname" }, o.community_name, o.is_sample ? el("span", { class: "tag" }, "Sample") : null),
+        el("div", { class: "plat" }, o.platform || "")),
+      el("td", {}, fmt(o.member_count)),
+      el("td", {}, o.price || "—"),
+      el("td", {}, fmt(o.posts_this_week)),
+      el("td", {}, el("div", { class: "score" },
+        el("div", { class: "track" }, el("div", { class: "fill", style: `width:${o.fit_score}%` })),
+        String(o.fit_score))),
+      el("td", {}, el("span", { class: "status " + o.status }, o.status))))
+    : [el("tr", {}, el("td", { colspan: 6, class: "empty" },
+        state.owners.length ? "No communities on this platform yet." :
+        "No owners yet. Click “+ Add owner”, “Import CSV” or “Load sample data”."))]));
+
+  // Panel
+  const o = state.owners.find(x => x.id === selectedId);
+  if (!o) { $("panel").replaceChildren(el("h2", {}, "Draft first message"), el("p", { class: "note" }, "Select a row to see it here.")); return; }
+  const ta = el("textarea", { id: "msg", placeholder: "No draft yet. Run the draft-outreach skill in Claude Code, or type a message here." });
+  ta.value = o.draft_message || "";
+  const statusSel = el("select", { style: "width:auto", onchange: (e) => api(`/api/owners/${o.id}`, { status: e.target.value }) },
+    ...state.statuses.map(s => { const opt = el("option", { value: s }, s); if (s === o.status) opt.selected = true; return opt; }));
+  $("panel").replaceChildren(
+    el("h2", {}, "Draft first message"),
+    el("div", { class: "sub", style: "margin-top:4px" },
+      o.community_name, o.owner_name ? ` · ${o.owner_name}` : "",
+      o.url ? el("span", {}, " · ", el("a", { href: o.url, target: "_blank", rel: "noopener" }, "open link")) : null),
+    el("h3", {}, "Why this owner"),
+    el("ul", {}, ...o.why.map(w => el("li", {}, w))),
+    el("h3", {}, "Message"),
+    ta,
+    el("div", { class: "panel-actions" },
+      el("button", { class: "primary", onclick: () => api(`/api/owners/${o.id}`, { status: "Approved", draft_message: $("msg").value }) }, "Approve"),
+      el("button", { onclick: skip }, "Skip"),
+      el("button", { onclick: () => api(`/api/owners/${o.id}`, { draft_message: $("msg").value }) }, "Save edits"),
+      el("span", { class: "sub", style: "margin-left:auto" }, "Status "), statusSel),
+    el("p", { class: "note" }, "Approve saves your edits and marks it Approved. Nothing is sent — copy the message and send it yourself. Skip moves to the next row without changing anything."));
+}
+
+function skip() {
+  const list = state.owners.filter(o => filter === "All" || o.platform === filter);
+  const i = list.findIndex(o => o.id === selectedId);
+  if (list.length) selectedId = list[(i + 1) % list.length].id;
+  render();
+}
+
+function editStat(label, key, current) {
+  const v = prompt(`${label} — enter the new number:`, current);
+  if (v === null) return;
+  api("/api/scoreboard", { [key]: v.trim() });
+}
+
+// Filters
+$("filters").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  filter = b.dataset.f; selectedId = null;
+  [...$("filters").children].forEach(x => x.classList.toggle("on", x === b));
+  render();
+});
+
+// Add owner
+$("addBtn").onclick = () => { $("addForm").reset(); $("addDialog").showModal(); };
+$("addCancel").onclick = () => $("addDialog").close();
+$("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData($("addForm")));
+  try { await api("/api/owners", data); $("addDialog").close(); } catch {}
+});
+
+// CSV import
+$("importBtn").onclick = () => $("csvFile").click();
+$("csvFile").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  await api("/api/import", { csv: await f.text() }).catch(() => {});
+  e.target.value = "";
+};
+
+// Samples
+$("sampleLoad").onclick = () => api("/api/sample/load", {});
+$("sampleClear").onclick = () => { if (confirm("Remove all communities marked Sample?")) api("/api/sample/clear", {}); };
+
+// Start
+fetch("/api/state").then(r => r.json()).then(s => {
+  state = s;
+  $("platformSel").replaceChildren(...s.platforms.map(p => el("option", { value: p }, p)));
+  render();
+}).catch(() => toast("Can't reach the server. Is server.py running?"));
+</script>
+</body>
+</html>

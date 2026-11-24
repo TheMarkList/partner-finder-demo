@@ -1,0 +1,10 @@
+# Private or local-only files. Never upload these.
+partners.db
+partners.db-*
+about-my-product.txt
+.env
+.env.*
+*.env
+.claude/settings.local.json
+__pycache__/
+.DS_Store
