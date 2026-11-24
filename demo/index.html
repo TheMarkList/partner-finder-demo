@@ -4,42 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Partner Finder Demo</title>
-<meta name="description" content="Concept demo of a tool that ranks community owners as referral partners and drafts first messages for review. Sample data only.">
+<meta name="description" content="Concept demo: simulated agents find, score and onboard community partners, and a person approves anything that goes out. Sample data only.">
 <style>
   :root {
     --bg: #f3f4f6; --card: #ffffff; --text: #111827; --muted: #6b7280;
-    --line: #e5e7eb; --blue: #2563eb; --blue-soft: #dbeafe;
+    --line: #e5e7eb; --blue: #2563eb; --blue-soft: #dbeafe; --green: #047857; --green-soft: #d1fae5;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
          font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   .banner { background: #eff6ff; border-bottom: 1px solid #bfdbfe; color: #1e3a8a; font-size: 13px;
             padding: 8px 16px; text-align: center; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
-  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
   h1 { font-size: 22px; margin: 0; }
   .sub { color: var(--muted); font-size: 13px; }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+  .actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .actions .btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .actions .honest { color: var(--muted); font-size: 12px; }
   button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card);
            color: var(--text); padding: 7px 12px; border-radius: 8px; cursor: pointer; }
-  button:hover { border-color: #cbd5e1; }
-  .primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-  .primary:hover { background: #1d4ed8; }
-  .small { font-size: 12px; padding: 3px 8px; }
+  button:hover:not(:disabled) { border-color: #cbd5e1; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; padding: 9px 16px; }
+  .primary:hover:not(:disabled) { background: #1d4ed8; }
+  .small { font-size: 12px; padding: 4px 9px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  h2 { font-size: 16px; margin: 0; }
 
-  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
   .stat .label { color: var(--muted); font-size: 13px; }
-  .stat .num { font-size: 28px; font-weight: 700; margin-top: 2px; }
-  .stat .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+  .stat .num { font-size: 28px; font-weight: 700; margin-top: 2px; transition: color .3s; }
   .stat.hero { background: var(--blue); border-color: var(--blue); color: #fff; }
   .stat.hero .label { color: #dbeafe; }
-  .stat.hero button { background: transparent; color: #fff; border-color: #93c5fd; }
+  .stat .num.bump { color: var(--green); }
+  .stat.hero .num.bump { color: #bbf7d0; }
 
-  .main { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
-  .left { display: grid; gap: 16px; min-width: 0; }
-  .main > *, .stats > *, .left > * { min-width: 0; }
-  h2 { font-size: 16px; margin: 0; }
+  .agents { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .agent { padding: 12px; border-radius: 10px; }
+  .agent .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .agent .name { font-weight: 600; font-size: 13px; }
+  .agent .what { color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .pill { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #f3f4f6; color: var(--muted); white-space: nowrap; font-weight: 600; }
+  .pill.Running { background: var(--blue-soft); color: var(--blue); }
+  .pill.Done { background: var(--green-soft); color: var(--green); }
+  .agent.Running { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 4px; vertical-align: 1px; }
+  .Running .dot { animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col { display: grid; gap: 16px; min-width: 0; }
+  .col > * { min-width: 0; }
   .bar-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .filters button.on { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
   .table-scroll { overflow-x: auto; }
@@ -49,6 +65,8 @@
   tbody tr { cursor: pointer; }
   tbody tr:hover { background: #f9fafb; }
   tbody tr.sel { background: var(--blue-soft); }
+  tbody tr.fresh td { animation: fresh 2.5s ease-out; }
+  @keyframes fresh { from { background: #dcfce7; } to { background: transparent; } }
   .cname { font-weight: 600; }
   .plat { color: var(--muted); font-size: 12px; }
   .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #fef3c7; color: #92400e; margin-left: 4px; font-weight: 600; }
@@ -57,20 +75,28 @@
   .fill { height: 100%; background: var(--blue); }
   .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; white-space: nowrap; }
   .status.Approved, .status.Signed { background: var(--blue-soft); color: var(--blue); }
-  .swipe { display: none; color: var(--muted); font-size: 12px; margin: -4px 0 8px; }
   .empty { color: var(--muted); text-align: center; padding: 28px 8px; }
 
   .how dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; font-size: 14px; }
   .how dt { font-weight: 600; }
   .how dd { margin: 0; color: #374151; }
 
+  .rule { font-size: 13px; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; margin-bottom: -6px; }
   .panel h3 { font-size: 13px; color: var(--muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
   .panel ul { margin: 0; padding-left: 18px; }
   .panel li { margin-bottom: 4px; }
+  .kits { font-size: 13px; background: var(--green-soft); color: #065f46; border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+  .kits.wait { background: #f3f4f6; color: var(--muted); }
   textarea { width: 100%; min-height: 190px; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
   .panel-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
   .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
   select, input { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 100%; }
+
+  .log { list-style: none; margin: 10px 0 0; padding: 0; max-height: 360px; overflow-y: auto; font-size: 13px; }
+  .log li { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .log .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .log .a { font-weight: 600; }
+  .log .x { grid-column: 2; color: #374151; }
 
   dialog { border: none; border-radius: 12px; padding: 20px; width: min(520px, calc(100vw - 32px)); }
   dialog::backdrop { background: rgba(17,24,39,.35); }
@@ -80,18 +106,11 @@
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
            padding: 10px 14px; border-radius: 8px; font-size: 14px; max-width: calc(100vw - 32px); display: none; z-index: 10; }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
+    .agents { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat.hero { grid-column: 1 / -1; }
     .main { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (max-width: 520px) {
-    header { flex-direction: column; align-items: stretch; }
-    .actions { justify-content: flex-start; }
-    .form { grid-template-columns: 1fr; }
-    .how dl { grid-template-columns: 1fr; gap: 2px; }
-    .how dd { margin-bottom: 8px; }
-    .swipe { display: block; }
   }
 </style>
 </head>
@@ -101,18 +120,23 @@
   <header>
     <div>
       <h1>Partner Finder</h1>
-      <div class="sub">Last updated: <span id="last">—</span> · <span id="saveNote">Changes are saved in your browser only.</span></div>
+      <div class="sub">Last run: <span id="lastRun">not run yet</span> · <span id="saveNote">Changes are saved in your browser only.</span></div>
     </div>
     <div class="actions">
-      <button class="primary" id="addBtn">+ Add owner</button>
-      <button id="resetBtn">Reset demo</button>
+      <div class="btns">
+        <button class="small" id="addBtn">+ Add owner</button>
+        <button class="small" id="resetBtn">Reset demo</button>
+        <button class="primary" id="runBtn">Run nightly agents</button>
+      </div>
+      <div class="honest">Simulated run. Sample data. No real agents run on this page.</div>
     </div>
   </header>
 
   <section class="stats" id="stats"></section>
+  <section class="agents" id="agents"></section>
 
   <section class="main">
-    <div class="left">
+    <div class="col">
       <div class="card">
         <div class="bar-head">
           <h2>Top matches</h2>
@@ -121,7 +145,6 @@
             <button class="small" data-f="Skool">Skool</button>
           </div>
         </div>
-        <div class="swipe">Swipe the table sideways to see fit score and status.</div>
         <div class="table-scroll">
           <table>
             <thead><tr>
@@ -135,16 +158,24 @@
       <div class="card how">
         <h2>How this would work</h2>
         <dl>
-          <dt>Sourcing</dt><dd>Community owners are added by hand or by spreadsheet, then ranked by how active, how big and how on-topic their community is.</dd>
-          <dt>Outreach</dt><dd>Claude drafts a short, personal first message for each top match, and a person reviews, edits and sends it by hand.</dd>
-          <dt>Onboarding</dt><dd>Owners who say yes get a partner link, a short welcome guide and a simple first challenge to share with their members.</dd>
-          <dt>Milestones and rewards</dt><dd>Partners unlock rewards as their referrals grow, with 10 referrals a month as the main goal.</dd>
-          <dt>Slack community</dt><dd>Signed partners join a private Slack to share wins, swap ideas and hear about new features first.</dd>
+          <dt>Sourcing</dt><dd>The Sourcing agent reads new partner applications each night, saves each community once and scores it on activity, size and niche fit.</dd>
+          <dt>Outreach</dt><dd>The Outreach agent drafts a short, personal first message for every new owner, and a person approves it before anything goes out.</dd>
+          <dt>Onboarding</dt><dd>When an owner signs, the Onboarding agent prepares their welcome kit and a 7-day challenge kit for their members.</dd>
+          <dt>Milestones and rewards</dt><dd>The Milestones agent recounts referrals every night and flags partners who reach 10 referrals a month for a reward.</dd>
+          <dt>Sponsorships</dt><dd>The Sponsorships agent ranks signed partners for paid collaborations using their fit score and referral results.</dd>
+          <dt>Slack community</dt><dd>The Slack agent answers common partner questions in a private Slack and passes anything tricky to a person.</dd>
         </dl>
       </div>
     </div>
 
-    <div class="card panel" id="panel"></div>
+    <div class="col">
+      <div class="rule">Agents do the work. A person approves anything that goes out.</div>
+      <div class="card panel" id="panel"></div>
+      <div class="card">
+        <div class="bar-head" style="margin-bottom:0"><h2>Activity log</h2><span class="sub">Newest first</span></div>
+        <ul class="log" id="log"></ul>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -172,11 +203,17 @@
 
 <script>
 // ------------------------------------------------------------------ settings
-const STORAGE_KEY = "partner-finder-demo-v1";
+const STORAGE_KEY = "partner-finder-demo-v3";
 const STATUSES = ["New", "Drafted", "Approved", "Replied", "Signed"];
 const PLATFORMS = ["Skool", "Circle", "Discord", "Slack", "Facebook group", "Other"];
+const AGENTS = [
+  ["sourcing", "Sourcing"], ["outreach", "Outreach"], ["onboarding", "Onboarding"],
+  ["milestones", "Milestones and rewards"], ["sponsorships", "Sponsorships"], ["slack", "Slack community"],
+];
+const SIGN_OFF = "Mark";
+const PITCH = "Partners earn a recurring commission for every member they refer.";
 
-// Made-up sample communities. Every name, owner and link here is fictional.
+// Starting samples. Every name, owner and link here is made up.
 const SAMPLES = [
   ["Sample: Coach Growth Lab", "Skool", "Jamie Sample", "business coaching for new coaches", 820, "$49/month", 14,
    "Hi Jamie,\n\nI came across Coach Growth Lab and love that it's built for coaches who are just getting started. That first year is where good habits stick.\n\nI wanted to tell you about a social media tool that helps coaches plan and post a week of content in about an hour. Partners earn a recurring commission for every member they refer.\n\nWould you be open to a quick chat to see if it's a fit for your group?\n\nMark"],
@@ -195,6 +232,58 @@ const SAMPLES = [
   ["Sample: Tiny Podcast Starters", "Slack", "Sam Sample", "podcast content creators", 40, "$10/month", 1,
    "Hi Sam,\n\nTiny Podcast Starters sounds like a lovely, close-knit group for people launching their first show.\n\nI wanted to tell you about a social media tool that turns each episode into ready-to-post clips and captions. Partners earn a recurring commission for every podcaster they refer.\n\nWould a quick chat be welcome once the group grows a little?\n\nMark"],
 ];
+
+// "Partner applications" the Sourcing agent picks up: three per run, three runs.
+// [name, platform, owner, niche, members, price, posts, opening line, what the tool would do for them]
+const APPLICATIONS = [
+  [
+    ["Sample: Faceless YouTube Academy", "Skool", "Quinn Sample", "faceless YouTube channel creators", 1350, "$39/month", 11,
+     "Faceless YouTube Academy is a smart niche. Plenty of people want to build a channel without being on camera.",
+     "turns each new upload into short clips and posts for every platform"],
+    ["Sample: Real Estate Agent Social Club", "Circle", "Drew Sample", "social media marketing for real estate agents", 2100, "$59/month", 7,
+     "Real Estate Agent Social Club looks really useful. Agents know they should post, but listings and showings eat the week.",
+     "lets agents batch a month of listing posts and market updates in one sitting"],
+    ["Sample: Wedding Photographers Business Hub", "Skool", "Avery Sample", "business coaching for wedding photographers", 480, "$29/month", 5,
+     "Wedding Photographers Business Hub caught my eye. Helping photographers run the business side is a real gap.",
+     "helps photographers keep their portfolio posts going during busy wedding season"],
+  ],
+  [
+    ["Sample: Course Creator Collective", "Skool", "Parker Sample", "online course creators and content marketing", 3200, "$49/month", 12,
+     "Course Creator Collective is clearly busy. Twelve posts this week is a lot of members helping each other launch.",
+     "turns one lesson into a week of social posts that point back to the course"],
+    ["Sample: Salon Owners Growth Group", "Facebook group", "Reese Sample", "local business marketing for salon owners", 900, "Free", 8,
+     "Salon Owners Growth Group looks like a supportive place for owners trying to fill more chairs.",
+     "lets salon owners schedule before-and-after posts for the whole month in one go"],
+    ["Sample: Mindset Mentors Circle", "Circle", "Rowan Sample", "life coaching and mentoring", 260, "$19/month", 3,
+     "Mindset Mentors Circle feels like a thoughtful, close-knit group of coaches.",
+     "helps coaches share one helpful idea a day without it taking over their schedule"],
+  ],
+  [
+    ["Sample: Restaurant Marketing Lab", "Skool", "Hayden Sample", "social media for local restaurant owners", 740, "$69/month", 6,
+     "Restaurant Marketing Lab is a great idea. Most restaurant owners have no time left for social media after service.",
+     "lets owners plan a month of menu and event posts in under an hour"],
+    ["Sample: Newsletter Creators Guild", "Discord", "Emerson Sample", "newsletter and content creators", 1800, "Free", 10,
+     "Newsletter Creators Guild looks like a lively crowd of writers swapping growth ideas.",
+     "turns each newsletter issue into a set of ready-to-post social snippets"],
+    ["Sample: Esports Highlights Hub", "Discord", "Kai Sample", "gaming clip editors", 5200, "Free", 25,
+     "Esports Highlights Hub is clearly very active, with new clips every day.",
+     "helps clip editors share highlights on several platforms at once"],
+  ],
+];
+
+const ASKS = [
+  "Would you be open to a quick chat to see if it's a fit?",
+  "Could this be useful for your members? Happy to send a short walkthrough.",
+  "Would a 15-minute call to explore it be worthwhile?",
+];
+const SLACK_QUESTIONS = [
+  "Can I get a custom discount code for my members?",
+  "Can the 7-day challenge run in a private Facebook group?",
+  "Is there a co-branded landing page for my community?",
+];
+const REFERRAL_START = [6, 11, 8, 13, 4, 10];   // made-up referrals a month for a newly signed partner
+// Samples that start out Signed (by id), with their made-up referrals a month.
+const STARTS_SIGNED = { 1: 12, 2: 7 };          // Coach Growth Lab, Creator Content Club
 
 // ------------------------------------------------------------------ fit score (same rules as the full tool)
 const COACH = ["coach", "coaching", "mentor"];
@@ -243,18 +332,27 @@ function whyThisOwner(o) {
 
 // ------------------------------------------------------------------ data (kept in this browser only)
 const nowStr = () => new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+const clock = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+function newOwner(id, f, extra = {}) {
+  const t = nowStr();
+  return { id, community_name: f.name, url: f.url, platform: f.platform, owner_name: f.owner, niche: f.niche,
+    member_count: f.members, price: f.price, posts_this_week: f.posts,
+    fit_score: scoreParts(f.name, f.niche, f.members, f.posts).total, status: "New", draft_message: "",
+    is_sample: true, date_found: t, date_updated: t,
+    onboarded: false, referrals: null, onboarded_run: null, hook: null, benefit: null, ...extra };
+}
 
 function freshData() {
-  const t = nowStr();
   return {
     nextId: SAMPLES.length + 1,
-    owners: SAMPLES.map(([name, platform, owner, niche, members, price, posts, draft], i) => ({
-      id: i + 1, community_name: name, url: `https://example.com/sample-${i + 1}`, platform,
-      owner_name: owner, niche, member_count: members, price, posts_this_week: posts,
-      fit_score: scoreParts(name, niche, members, posts).total, status: "Drafted",
-      draft_message: draft, is_sample: true, date_found: t, date_updated: t })),
-    manual: { challenges_run: 0, partners_signed: 0, partners_at_10_per_month: 0 },
-    last_updated: t,
+    owners: SAMPLES.map(([name, platform, owner, niche, members, price, posts, draft], i) =>
+      newOwner(i + 1, { name, platform, owner, niche, members, price, posts, url: `https://example.com/sample-${i + 1}` },
+               { status: STARTS_SIGNED[i + 1] ? "Signed" : "Drafted", draft_message: draft,
+                 referrals: STARTS_SIGNED[i + 1] ?? null })),
+    runCount: 0, batchesUsed: 0, lastRun: null,
+    agents: Object.fromEntries(AGENTS.map(([k]) => [k, { status: "Idle", last: "Waiting for the first run." }])),
+    log: [],
   };
 }
 
@@ -262,17 +360,35 @@ let storageOk = true;
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { const d = JSON.parse(raw); if (d && Array.isArray(d.owners)) return d; }
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.owners) && d.agents) {
+        for (const a of Object.values(d.agents)) if (a.status === "Running") a.status = "Idle";
+        return d;
+      }
+    }
   } catch { storageOk = false; }
   return freshData();
 }
 function save() {
-  data.last_updated = nowStr();
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
   catch { storageOk = false; }
 }
 
-let data = load(), filter = "All", selectedId = null;
+let data = load(), filter = "All", selectedId = null, running = false, freshIds = new Set(), prevStats = null;
+
+// Scoreboard: every number is worked out from the data.
+function stats() {
+  const partners = data.owners.filter(o => o.status === "Signed" && o.onboarded);
+  return {
+    found: data.owners.length,
+    signed: data.owners.filter(o => o.status === "Signed").length,
+    challenges: data.owners.filter(o => o.onboarded).length,
+    partners: partners.length,
+    atTen: partners.filter(o => (o.referrals || 0) >= 10).length,
+  };
+}
+const waitingForOnboarding = () => data.owners.filter(o => o.status === "Signed" && !o.onboarded);
 
 // ------------------------------------------------------------------ screen
 const $ = (id) => document.getElementById(id);
@@ -293,29 +409,46 @@ function toast(msg) {
 const fmt = (n) => n == null ? "—" : Number(n).toLocaleString();
 const sorted = () => [...data.owners].sort((a, b) => b.fit_score - a.fit_score || a.community_name.localeCompare(b.community_name));
 const visible = () => sorted().filter(o => filter === "All" || o.platform === filter);
+const firstName = (o) => (o.owner_name || "").trim().split(/\s+/)[0] || "there";
+
+function renderButtons() {
+  const canRun = !running && (data.batchesUsed < APPLICATIONS.length || waitingForOnboarding().length > 0);
+  const rb = $("runBtn");
+  rb.disabled = !canRun;
+  rb.textContent = running ? "Agents running…" : canRun ? "Run nightly agents" : "No new applications tonight.";
+  rb.title = !running && !canRun ? "Set an owner to Signed to give the Onboarding agent something to do." : "";
+  $("resetBtn").disabled = running;
+  $("addBtn").disabled = running;
+}
 
 function render() {
-  $("last").textContent = data.last_updated || "—";
+  $("lastRun").textContent = data.lastRun || "not run yet";
   if (!storageOk) $("saveNote").textContent = "Your browser is blocking storage, so changes reset when you reload.";
+  renderButtons();
 
-  const cards = [
-    ["Owners found", data.owners.length, null],
-    ["Owners signed", data.owners.filter(o => o.status === "Signed").length, null],
-    ["Challenges run", data.manual.challenges_run, "challenges_run"],
-    ["Partners signed", data.manual.partners_signed, "partners_signed"],
-    ["Partners at 10 referrals a month", data.manual.partners_at_10_per_month, "partners_at_10_per_month"],
-  ];
-  $("stats").replaceChildren(...cards.map(([label, num, key], i) =>
+  const s = stats();
+  const cards = [["Owners found", "found"], ["Owners signed", "signed"], ["Challenges run", "challenges"],
+                 ["Partners signed", "partners"], ["Partners at 10 referrals a month", "atTen"]];
+  $("stats").replaceChildren(...cards.map(([label, key], i) =>
     el("div", { class: "card stat" + (i === 4 ? " hero" : "") },
-      el("div", { class: "row" }, el("div", { class: "label" }, label),
-        key ? el("button", { class: "small", onclick: () => editStat(label, key) }, "Edit") : null),
-      el("div", { class: "num" }, fmt(num)))));
+      el("div", { class: "label" }, label),
+      el("div", { class: "num" + (prevStats && s[key] > prevStats[key] ? " bump" : "") }, fmt(s[key])))));
+  prevStats = s;
+
+  $("agents").replaceChildren(...AGENTS.map(([k, name]) => {
+    const a = data.agents[k];
+    return el("div", { class: "card agent " + a.status },
+      el("div", { class: "top" }, el("span", { class: "name" }, name),
+        el("span", { class: "pill " + a.status }, el("span", { class: "dot" }), a.status)),
+      el("div", { class: "what" }, a.last));
+  }));
 
   const list = visible();
   if (selectedId && !list.some(o => o.id === selectedId)) selectedId = null;
   if (!selectedId && list.length) selectedId = list[0].id;
   $("rows").replaceChildren(...(list.length ? list.map(o =>
-    el("tr", { class: o.id === selectedId ? "sel" : "", onclick: () => { selectedId = o.id; render(); } },
+    el("tr", { class: (o.id === selectedId ? "sel " : "") + (freshIds.has(o.id) ? "fresh" : ""),
+               onclick: () => { selectedId = o.id; render(); } },
       el("td", {}, el("div", { class: "cname" }, o.community_name, o.is_sample ? el("span", { class: "tag" }, "Sample") : null),
                    el("div", { class: "plat" }, o.platform || "")),
       el("td", {}, fmt(o.member_count)),
@@ -325,17 +458,41 @@ function render() {
         el("div", { class: "track" }, el("div", { class: "fill", style: `width:${o.fit_score}%` })), String(o.fit_score))),
       el("td", {}, el("span", { class: "status " + o.status }, o.status))))
     : [el("tr", {}, el("td", { colspan: 6, class: "empty" }, "No communities on this platform yet."))]));
+  freshIds.clear();
 
+  $("log").replaceChildren(...(data.log.length ? data.log.map(l =>
+    el("li", {}, el("span", { class: "t" }, l.t), el("span", { class: "a" }, l.agent), el("span", { class: "x" }, l.text)))
+    : [el("li", {}, el("span", { class: "t" }, ""), el("span", { class: "x", style: "grid-column:1/-1" }, "Nothing yet. Click “Run nightly agents”."))]));
+
+  renderPanel();
+}
+
+function renderPanel() {
   const o = data.owners.find(x => x.id === selectedId);
   if (!o) { $("panel").replaceChildren(el("h2", {}, "Draft first message"), el("p", { class: "note" }, "Select a row to see it here.")); return; }
-  const ta = el("textarea", { id: "msg", placeholder: "In the full tool, Claude drafts this message. Type one here to try it." });
+  // Don't wipe what someone is typing while agents update the screen.
+  const current = $("msg");
+  if (current && current.dataset.id === String(o.id) && document.activeElement === current) return;
+
+  const ta = el("textarea", { id: "msg", "data-id": String(o.id),
+    placeholder: "No draft yet. The Outreach agent drafts this on the next run, or type one here." });
   ta.value = o.draft_message || "";
   const statusSel = el("select", { style: "width:auto", "aria-label": "Status",
-      onchange: (e) => { o.status = e.target.value; o.date_updated = nowStr(); save(); render(); toast("Status changed."); } },
-    ...STATUSES.map(s => { const opt = el("option", { value: s }, s); if (s === o.status) opt.selected = true; return opt; }));
+      onchange: (e) => { o.status = e.target.value; o.date_updated = nowStr(); save(); render();
+        toast(o.status === "Signed" && !o.onboarded ? "Signed. The Onboarding agent will prepare kits on the next run." : "Status changed."); } },
+    ...STATUSES.map(st => { const opt = el("option", { value: st }, st); if (st === o.status) opt.selected = true; return opt; }));
+
+  let kits = null;
+  if (o.status === "Signed" && o.onboarded)
+    kits = el("div", { class: "kits" }, `Welcome kit and 7-day challenge kit ready (not sent). Referrals this month: ${o.referrals} (sample figure).`);
+  else if (o.status === "Signed")
+    kits = el("div", { class: "kits wait" }, "Signed. The Onboarding agent will prepare a welcome kit and 7-day challenge kit on the next run." +
+      (o.referrals != null ? ` Referrals this month: ${o.referrals} (sample figure).` : ""));
+
   $("panel").replaceChildren(
     el("h2", {}, "Draft first message"),
     el("div", { class: "sub", style: "margin-top:4px" }, o.community_name, o.owner_name ? ` · ${o.owner_name}` : ""),
+    ...(kits ? [kits] : []),   // only add the kits box when there is one
     el("h3", {}, "Why this owner"),
     el("ul", {}, ...whyThisOwner(o).map(w => el("li", {}, w))),
     el("h3", {}, "Message"),
@@ -354,14 +511,126 @@ function skip() {
   render();
 }
 
-function editStat(label, key) {
-  const v = prompt(`${label}: enter the new number`, data.manual[key]);
-  if (v === null) return;
-  const n = Number(v.trim().replace(/,/g, ""));
-  if (!Number.isInteger(n) || n < 0) return toast("Please enter a whole number, 0 or more.");
-  data.manual[key] = n; save(); render(); toast("Scoreboard updated.");
+// ------------------------------------------------------------------ simulated agent run
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+function log(agent, text) {
+  data.log.unshift({ t: clock(), agent, text });
+  data.log = data.log.slice(0, 200);
 }
 
+function draftFor(o, n) {
+  const hook = o.hook || `I came across ${o.community_name.replace(/^Sample: /, "")}${o.niche ? ` and liked its focus on ${o.niche}` : ""}.`;
+  const benefit = o.benefit || "helps community owners plan and post content across platforms in less time";
+  return `Hi ${firstName(o)},\n\n${hook}\n\nI wanted to tell you about a social media tool that ${benefit}. ${PITCH}\n\n${ASKS[n % ASKS.length]}\n\n${SIGN_OFF}`;
+}
+
+async function step(key, work) {
+  data.agents[key].status = "Running"; render();
+  await wait(1000);
+  const line = await work();
+  data.agents[key] = { status: "Done", last: line };
+  save(); render();
+  await wait(300);
+}
+
+async function runAgents() {
+  if (running) return;
+  running = true;
+  data.runCount += 1;
+  const run = data.runCount;
+  for (const [k] of AGENTS) data.agents[k].status = "Idle";
+  log("Run", `Nightly run ${run} started (simulated).`);
+  render();
+
+  try {
+    // 1. Sourcing
+    await step("sourcing", async () => {
+      const batch = APPLICATIONS[data.batchesUsed];
+      if (!batch) { log("Sourcing", "No new applications tonight."); return "No new applications tonight."; }
+      const names = [];
+      for (const [name, platform, owner, niche, members, price, posts, hook, benefit] of batch) {
+        await wait(450);
+        const o = newOwner(data.nextId++, { name, platform, owner, niche, members, price, posts,
+          url: `https://example.com/application-${data.nextId - 1}` }, { hook, benefit });
+        data.owners.push(o); freshIds.add(o.id); names.push(name);
+        log("Sourcing", `Added ${name} from partner applications. Fit score ${o.fit_score}.`);
+        render();
+      }
+      data.batchesUsed += 1;
+      return `Added ${batch.length} owners from partner applications and scored them.`;
+    });
+
+    // 2. Outreach
+    await step("outreach", async () => {
+      const todo = data.owners.filter(o => o.status === "New");
+      if (!todo.length) { log("Outreach", "No new owners to draft for."); return "No new owners to draft for."; }
+      let n = 0;
+      for (const o of todo) {
+        await wait(350);
+        o.draft_message = draftFor(o, n++); o.status = "Drafted"; o.date_updated = nowStr();
+        log("Outreach", `Drafted a first message for ${o.community_name}. Waiting for a person to approve.`);
+        render();
+      }
+      return `Drafted ${todo.length} first message${todo.length > 1 ? "s" : ""}. None sent; each needs a person to approve.`;
+    });
+
+    // 3. Onboarding
+    await step("onboarding", async () => {
+      const todo = waitingForOnboarding();
+      if (!todo.length) { log("Onboarding", "No newly signed owners."); return "No newly signed owners."; }
+      for (const o of todo) {
+        o.onboarded = true; o.onboarded_run = run; o.referrals = o.referrals ?? REFERRAL_START[o.id % REFERRAL_START.length];
+        log("Onboarding", `Prepared a welcome kit and 7-day challenge kit for ${o.community_name} (not sent).`);
+      }
+      return `Prepared welcome and 7-day challenge kits for ${todo.length} signed owner${todo.length > 1 ? "s" : ""}.`;
+    });
+
+    // 4. Milestones and rewards
+    await step("milestones", async () => {
+      const partners = data.owners.filter(o => o.status === "Signed" && o.onboarded);
+      for (const o of partners) {
+        if (o.onboarded_run < run) {
+          const before = o.referrals;
+          o.referrals = before + 3;   // made-up growth since last run
+          if (before < 10 && o.referrals >= 10) log("Milestones", `${o.community_name} reached ${o.referrals} referrals a month. Reward flagged for a person to approve.`);
+        } else if (o.referrals >= 10) {
+          log("Milestones", `${o.community_name} starts at ${o.referrals} referrals a month. Reward flagged for a person to approve.`);
+        }
+      }
+      const s = stats();
+      const line = `Scoreboard recalculated: ${s.partners} partner${s.partners !== 1 ? "s" : ""} signed, ${s.atTen} at 10+ referrals a month (sample figures).`;
+      log("Milestones", line);
+      return line;
+    });
+
+    // 5. Sponsorships
+    await step("sponsorships", async () => {
+      const ranked = data.owners.filter(o => o.status === "Signed" && o.onboarded)
+        .sort((a, b) => (b.referrals * 2 + b.fit_score) - (a.referrals * 2 + a.fit_score));
+      if (!ranked.length) { log("Sponsorships", "No signed partners to rank yet."); return "No signed partners to rank yet."; }
+      ranked.forEach((o, i) => log("Sponsorships", `#${i + 1} for a paid collaboration: ${o.community_name} (fit ${o.fit_score}, ${o.referrals} referrals a month).`));
+      return `Ranked ${ranked.length} signed partner${ranked.length > 1 ? "s" : ""}. Top pick: ${ranked[0].community_name.replace(/^Sample: /, "")}.`;
+    });
+
+    // 6. Slack community
+    await step("slack", async () => {
+      const partners = stats().partners;
+      if (partners === 0) { log("Slack", "No partners in Slack yet."); return "No partners in Slack yet."; }
+      const answered = partners * 3 + (run % 3), passed = Math.min(partners, 1 + (run % 2));   // made-up, scales with partners
+      log("Slack", `Passed to a person: “${SLACK_QUESTIONS[(run - 1) % SLACK_QUESTIONS.length]}”`);
+      const line = `Answered ${answered} question${answered !== 1 ? "s" : ""} from ${partners} partner${partners !== 1 ? "s" : ""}, passed ${passed} to a person (sample figures).`;
+      log("Slack", line);
+      return line;
+    });
+
+    data.lastRun = nowStr();
+    log("Run", `Nightly run ${run} finished. Nothing was sent.`);
+  } finally {
+    running = false; save(); render();
+  }
+}
+
+// ------------------------------------------------------------------ add owner (by hand)
 function toInt(v) {
   const s = String(v ?? "").trim().replace(/,/g, "");
   if (s === "" || s === "-" || s === "—") return null;
@@ -373,7 +642,6 @@ function makeKey(url, name, platform) {
   if (url && url.trim()) return url.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
   return `name:${(name || "").trim().toLowerCase()}|${(platform || "").trim().toLowerCase()}`;
 }
-
 function addOwner(f) {
   const name = (f.community_name || "").trim();
   if (!name) throw new Error("Community name is required");
@@ -385,9 +653,11 @@ function addOwner(f) {
   const key = makeKey(fields.url, name, fields.platform);
   const existing = data.owners.find(o => makeKey(o.url, o.community_name, o.platform) === key);
   if (existing) { Object.assign(existing, fields); selectedId = existing.id; save(); return "Already saved, so the numbers were updated."; }
-  const o = { id: data.nextId++, ...fields, status: "New", draft_message: "", is_sample: false, date_found: fields.date_updated };
-  data.owners.push(o); selectedId = o.id; save();
-  return "Owner added.";
+  const o = { ...newOwner(data.nextId++, { name, platform: fields.platform, owner: fields.owner_name, niche: fields.niche,
+              members, price: fields.price, posts, url: fields.url }), is_sample: false };
+  data.owners.push(o); selectedId = o.id; freshIds.add(o.id); save();
+  log("Person", `Added ${name} by hand. Fit score ${o.fit_score}.`);
+  return "Owner added. The Outreach agent drafts a message on the next run.";
 }
 
 // ------------------------------------------------------------------ buttons
@@ -402,12 +672,14 @@ $("addBtn").onclick = () => { $("addForm").reset(); $("addDialog").showModal(); 
 $("addCancel").onclick = () => $("addDialog").close();
 $("addForm").addEventListener("submit", (e) => {
   e.preventDefault();
-  try { toast(addOwner(Object.fromEntries(new FormData($("addForm"))))); $("addDialog").close(); render(); }
+  try { toast(addOwner(Object.fromEntries(new FormData($("addForm"))))); $("addDialog").close(); save(); render(); }
   catch (err) { toast("Problem: " + err.message); }
 });
+$("runBtn").onclick = () => runAgents();
 $("resetBtn").onclick = () => {
-  if (!confirm("Reset the demo? This brings back the original 8 samples and removes your changes.")) return;
-  data = freshData(); selectedId = null; filter = "All";
+  if (running) return;
+  if (!confirm("Reset the demo? This brings back the original 8 samples and clears the log and run count.")) return;
+  data = freshData(); selectedId = null; filter = "All"; prevStats = null;
   [...$("filters").children].forEach(x => x.classList.toggle("on", x.dataset.f === "All"));
   try { localStorage.removeItem(STORAGE_KEY); } catch { storageOk = false; }
   save(); render(); toast("Demo reset.");

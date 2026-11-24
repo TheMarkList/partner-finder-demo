@@ -17,7 +17,7 @@ or by CSV. The tool scores them, Claude drafts first messages, and you review th
 - `server.py`: the small local web server.
 - `db.py`: database, fit score and CSV import.
 - `screen.html`: the screen for the local tool.
-- `demo/index.html`: a browser-only demo with sample data (no server needed).
+- `demo/index.html`: a browser-only demo with sample data and a simulated nightly run of six agents (no server needed).
 - `index.html`: forwards the GitHub Pages link to the demo.
 - `template.csv`: blank CSV with the right columns.
 - `about-my-product.txt`: not included. Create it yourself with your product name, what it does,
